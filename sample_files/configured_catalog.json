@@ -1,0 +1,30 @@
+{
+    "streams": [
+      {
+        "stream": {
+          "name": "environment_canada",
+          "json_schema": {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "type": "object",
+            "properties": {
+              "climate_id": {
+                "type": "string"
+              },
+              "year": {
+                "type": "integer"
+              },
+              "month": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "integer"
+              }
+            }
+          },
+          "supported_sync_modes": ["full_refresh"]
+        },
+        "sync_mode": "full_refresh",
+        "destination_sync_mode": "overwrite"
+      }
+    ]
+  }
