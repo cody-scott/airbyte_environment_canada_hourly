@@ -15,8 +15,7 @@ source_environment_canada.egg-info/SOURCES.txt
 source_environment_canada.egg-info/dependency_links.txt
 source_environment_canada.egg-info/requires.txt
 source_environment_canada.egg-info/top_level.txt
-source_environment_canada/schemas/customers.json
-source_environment_canada/schemas/employees.json
+source_environment_canada/schemas/environment_canada.json
 unit_tests/__init__.py
 unit_tests/test_incremental_streams.py
 unit_tests/test_source.py

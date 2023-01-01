@@ -10,14 +10,8 @@
               "climate_id": {
                 "type": "string"
               },
-              "year": {
-                "type": "integer"
-              },
-              "month": {
-                "type": "integer"
-              },
-              "day": {
-                "type": "integer"
+              "start_date": {
+                "type": "string"
               }
             }
           },

@@ -5,21 +5,14 @@ connectionSpecification:
   type: object
   required:
     - climate_id
-    - year
-    - month
-    - day
+    - start_date
   properties:
     # 'TODO: This schema defines the configuration required for the source. This usually involves metadata such as database and/or authentication information.':
     climate_id:
       type: string
       description: identification of the site
-    year:
-      type: integer
-      description: numeric year to request
-    month:
-      type: integer
-      description: numeric month to request
-    day:
-      type: integer
-      description: numeric day to request
+    start_date:
+      type: string
+      description: date to begin collecting data
+      # examples: YYYY-MM-DD
 

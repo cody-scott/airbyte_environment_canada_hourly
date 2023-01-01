@@ -12,6 +12,7 @@ from airbyte_cdk.sources.streams import Stream
 from airbyte_cdk.sources.streams.http import HttpStream
 from airbyte_cdk.sources.streams.http.auth import TokenAuthenticator
 
+import datetime
 """
 TODO: Most comments in this class are instructive and should be deleted after the source is implemented.
 
@@ -29,35 +30,20 @@ There are additional required TODOs in the files within the integration_tests fo
 
 # Basic full refresh stream
 class EnvironmentCanada(HttpStream):
-    # TODO: Fill in the url base. Required.
+    date_field_name = "date"
+
     url_base = "https://api.weather.gc.ca/"
     primary_key = None
 
-    def __init__(self, climate_id: str, year: int, month: int, day: int, **kwargs):
+    def __init__(self, climate_id: str, start_date: str, **kwargs):
         super().__init__(**kwargs)
         self.climate_id = climate_id
-        self.year = year
-        self.month = month
-        self.day = day
+        self.start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
 
     def path(self, **kwargs):
         return 'collections/climate-hourly/items'
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
-        """
-        TODO: Override this method to define a pagination strategy. If you will not be using pagination, no action is required - just return None.
-
-        This method should return a Mapping (e.g: dict) containing whatever information required to make paginated requests. This dict is passed
-        to most other methods in this class to help you form headers, request bodies, query params, etc..
-
-        For example, if the API accepts a 'page' parameter to determine which page of the result to return, and a response from the API contains a
-        'page' number, then this method should probably return a dict {'page': response.json()['page'] + 1} to increment the page count by 1.
-        The request_params method should then read the input next_page_token and set the 'page' param to next_page_token['page'].
-
-        :param response: the most recent response from the API
-        :return If there is another page in the result, a mapping (e.g: dict) containing information needed to query the next page in the response.
-                If there are no more pages in the result, return None.
-        """
         return None
 
     def request_params(
@@ -67,11 +53,12 @@ class EnvironmentCanada(HttpStream):
         TODO: Override this method to define any query parameters to be set. Remove this method if you don't need to define request params.
         Usually contains common params e.g. pagination size etc.
         """
+        current_date = stream_slice[self.date_field_name]
         return {
             'CLIMATE_IDENTIFIER': self.climate_id,
-            "LOCAL_YEAR": self.year,
-            "LOCAL_MONTH": self.month,
-            "LOCAL_DAY": self.day,
+            "LOCAL_YEAR": current_date.year,
+            "LOCAL_MONTH": current_date.month,
+            "LOCAL_DAY": current_date.day,
             "limit": 24
         }
 
@@ -80,7 +67,33 @@ class EnvironmentCanada(HttpStream):
         TODO: Override this method to define how a response is parsed.
         :return an iterable containing each record in the response
         """
-        return response.json()['features']
+        response = response.json()['features']
+        return response
+
+    def stream_slices(self, stream_state: Mapping[str, Any] = None, **kwargs) -> Iterable[Optional[Mapping[str, Any]]]:
+        stream_state = stream_state or {}
+        start_date = self.start_date
+        return chunk_date_range(start_date)
+
+    def get_updated_state(self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]):
+        current_stream_state = current_stream_state or {}
+        current_stream_state[self.date_field_name] = max(
+            latest_record[self.date_field_name], current_stream_state.get(self.date_field_name, self._start_date)
+        )
+        return current_stream_state
+
+def chunk_date_range(start_date: datetime.datetime) -> Iterable[Mapping[str, Any]]:
+    """ 
+    Returns a list of each day between the start date and now. Ignore weekends since exchanges don't run on weekends.
+    The return value is a list of dicts {'date': date_string}.
+    """
+    days = []
+    now = datetime.datetime.now()
+    while start_date < now:
+        days.append({"date": start_date})
+        start_date += datetime.timedelta(days=1)
+
+    return days
 
 
 # Source
@@ -109,7 +122,5 @@ class SourceEnvironmentCanada(AbstractSource):
         # return [Customers(authenticator=auth), Employees(authenticator=auth)]
         return [EnvironmentCanada(
             climate_id=config['climate_id'],
-            year=config['year'],
-            month=config['month'],
-            day=config['day']
+            start_date=config['start_date']
         )]
